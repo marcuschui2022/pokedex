@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -100,7 +101,12 @@ func commandMap(cfg *config) error {
 	if err != nil {
 		return fmt.Errorf("%w", err)
 	}
-	defer res.Body.Close()
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Printf("error closing response body: %v", err)
+		}
+	}(res.Body)
 
 	if res.StatusCode > http.StatusOK {
 		return fmt.Errorf("HTTP status code %d", res.StatusCode)
