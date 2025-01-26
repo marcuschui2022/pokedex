@@ -73,8 +73,13 @@ func getCommands() map[string]cliCommand {
 		},
 		"map": {
 			name:        "map",
-			description: "Displays a map of the Pokedex",
+			description: "Displays the Pokedex map or the next page of the Pokedex map",
 			callback:    commandMap,
+		},
+		"mapb": {
+			name:        "mapb",
+			description: "Displays the previous page of the Pokedex map",
+			callback:    commandMapBack,
 		},
 	}
 }
@@ -95,6 +100,46 @@ func commandMap(cfg *config) error {
 		curURL = *cfg.Next
 	} else {
 		curURL = "https://pokeapi.co/api/v2/location-area"
+	}
+
+	res, err := http.Get(curURL)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	defer func(Body io.ReadCloser) {
+		err := Body.Close()
+		if err != nil {
+			fmt.Printf("error closing response body: %v", err)
+		}
+	}(res.Body)
+
+	if res.StatusCode > http.StatusOK {
+		return fmt.Errorf("HTTP status code %d", res.StatusCode)
+	}
+
+	var locations location
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(&locations); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	cfg.Next = locations.Next
+	cfg.Previous = locations.Previous
+
+	for _, location := range locations.Results {
+		fmt.Println(location.Name)
+	}
+
+	return nil
+}
+
+func commandMapBack(cfg *config) error {
+	var curURL string
+	if cfg.Previous != nil {
+		curURL = *cfg.Previous
+	} else {
+
+		return fmt.Errorf("no previous page.")
 	}
 
 	res, err := http.Get(curURL)
