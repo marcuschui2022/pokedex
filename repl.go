@@ -2,12 +2,20 @@ package main
 
 import (
 	"bufio"
+	"encoding/json"
 	"fmt"
+	"net/http"
 	"os"
 	"strings"
 )
 
+type config struct {
+	Next     *string
+	Previous *string
+}
+
 func startRepl() {
+	cfg := &config{}
 	reader := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -23,7 +31,7 @@ func startRepl() {
 
 		if cmd, cmdExists := getCommands()[commandName]; cmdExists {
 			if cmdExists {
-				err := cmd.callback()
+				err := cmd.callback(cfg)
 				if err != nil {
 					fmt.Printf("Error executing command: %s\n", err)
 				}
@@ -46,7 +54,7 @@ func cleanInput(text string) []string {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func() error
+	callback    func(cfg *config) error
 }
 
 // getCommands returns a map of available CLI commands, each with its name, description, and associated callback function.
@@ -62,5 +70,54 @@ func getCommands() map[string]cliCommand {
 			description: "Displays a help message",
 			callback:    commandHelp,
 		},
+		"map": {
+			name:        "map",
+			description: "Displays a map of the Pokedex",
+			callback:    commandMap,
+		},
 	}
+}
+
+type location struct {
+	Count    int     `json:"count"`
+	Next     *string `json:"next"`
+	Previous *string `json:"previous"`
+	Results  []struct {
+		Name string `json:"name"`
+		Url  string `json:"url"`
+	} `json:"results"`
+}
+
+func commandMap(cfg *config) error {
+	var curURL string
+	if cfg.Next != nil {
+		curURL = *cfg.Next
+	} else {
+		curURL = "https://pokeapi.co/api/v2/location-area"
+	}
+
+	res, err := http.Get(curURL)
+	if err != nil {
+		return fmt.Errorf("%w", err)
+	}
+	defer res.Body.Close()
+
+	if res.StatusCode > http.StatusOK {
+		return fmt.Errorf("HTTP status code %d", res.StatusCode)
+	}
+
+	var locations location
+	decoder := json.NewDecoder(res.Body)
+	if err := decoder.Decode(&locations); err != nil {
+		return fmt.Errorf("%w", err)
+	}
+
+	cfg.Next = locations.Next
+	cfg.Previous = locations.Previous
+
+	for _, location := range locations.Results {
+		fmt.Println(location.Name)
+	}
+
+	return nil
 }
