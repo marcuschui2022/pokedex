@@ -3,17 +3,25 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"github.com/marcuschui2022/pokedex/internal/pokecache"
 	"os"
 	"strings"
+	"time"
 )
 
 type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
+	cache            *pokecache.Cache
 }
 
 func startRepl() {
-	cfg := &config{}
+	const cacheInterval = 5 * time.Second
+	cache := pokecache.NewCache(cacheInterval)
+	cfg := &config{
+		cache: cache,
+	}
+
 	reader := bufio.NewScanner(os.Stdin)
 
 	for {

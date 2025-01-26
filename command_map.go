@@ -17,7 +17,19 @@ type location struct {
 	} `json:"results"`
 }
 
-func httpGET(url string) (location, error) {
+func httpGET(url string, cfg *config) (location, error) {
+	// check cache
+	if cachedData, found := cfg.cache.Get(url); found {
+		fmt.Println("Cache hit!")
+		var locations location
+		err := json.Unmarshal(cachedData, &locations)
+		if err != nil {
+			return location{}, err
+		}
+		return locations, nil
+	}
+
+	fmt.Println("Cache miss! Fetching from API")
 	res, err := http.Get(url)
 	if err != nil {
 		return location{}, fmt.Errorf("failed to perform HTTP GET request to %s: %w", url, err)
@@ -33,10 +45,17 @@ func httpGET(url string) (location, error) {
 		return location{}, fmt.Errorf("received unexpected HTTP status code %d from %s", res.StatusCode, url)
 	}
 
-	var locations location
-	decoder := json.NewDecoder(res.Body)
+	body, err := io.ReadAll(res.Body)
+	if err != nil {
+		return location{}, fmt.Errorf("failed to read response body: %w", err)
+	}
 
-	if err := decoder.Decode(&locations); err != nil {
+	fmt.Println("Cache add!")
+	cfg.cache.Add(url, body)
+
+	var locations location
+
+	if err := json.Unmarshal(body, &locations); err != nil {
 		return location{}, fmt.Errorf("failed to decode response body: %w", err)
 	} else {
 		return locations, nil
@@ -51,7 +70,7 @@ func commandMapForward(cfg *config) error {
 		curURL = "https://pokeapi.co/api/v2/location-area"
 	}
 
-	data, err := httpGET(curURL)
+	data, err := httpGET(curURL, cfg)
 	if err != nil {
 		return err
 	}
@@ -75,7 +94,7 @@ func commandMapBack(cfg *config) error {
 		return fmt.Errorf("you're on the first page")
 	}
 
-	data, err := httpGET(curURL)
+	data, err := httpGET(curURL, cfg)
 	if err != nil {
 		return err
 	}

@@ -8,6 +8,7 @@ import (
 type Cache struct {
 	data  map[string]cacheEntry
 	mutex sync.Mutex
+	done  chan struct{}
 }
 
 type cacheEntry struct {
@@ -18,7 +19,10 @@ type cacheEntry struct {
 func NewCache(interval time.Duration) *Cache {
 	cache := &Cache{
 		data: make(map[string]cacheEntry),
+		done: make(chan struct{}),
 	}
+
+	cache.reapLoop(interval)
 
 	return cache
 }
@@ -40,4 +44,30 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 		return data.val, true
 	}
 	return nil, false
+}
+
+func (c *Cache) reapLoop(interval time.Duration) {
+	ticker := time.NewTicker(interval)
+	go func() {
+		for {
+			select {
+			case <-c.done:
+				ticker.Stop()
+				return
+			case <-ticker.C:
+				c.mutex.Lock()
+				for key, data := range c.data {
+					if data.createdAt.Add(interval).Before(time.Now()) {
+						delete(c.data, key)
+					}
+				}
+				c.mutex.Unlock()
+			}
+		}
+	}()
+}
+
+func (c *Cache) Stop() {
+	close(c.done) // Signal the goroutine to stop
+
 }
