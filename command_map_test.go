@@ -61,3 +61,13 @@ func TestReapLoop(t *testing.T) {
 		return
 	}
 }
+
+func TestCacheStop(t *testing.T) {
+	cache := pokecache.NewCache(time.Millisecond * 10)
+	cache.Add("test", []byte("data"))
+	cache.Stop()
+	_, ok := cache.Get("test")
+	if !ok {
+		t.Error("Expected to still find data after stop")
+	}
+}

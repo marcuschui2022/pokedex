@@ -22,7 +22,7 @@ func NewCache(interval time.Duration) *Cache {
 		done: make(chan struct{}),
 	}
 
-	cache.reapLoop(interval)
+	go cache.reapLoop(interval)
 
 	return cache
 }
@@ -40,31 +40,31 @@ func (c *Cache) Get(key string) ([]byte, bool) {
 	c.mutex.Lock()
 	defer c.mutex.Unlock()
 	data, exists := c.data[key]
-	if exists {
-		return data.val, true
-	}
-	return nil, false
+	return data.val, exists
 }
 
 func (c *Cache) reapLoop(interval time.Duration) {
 	ticker := time.NewTicker(interval)
-	go func() {
-		for {
-			select {
-			case <-c.done:
-				ticker.Stop()
-				return
-			case <-ticker.C:
-				c.mutex.Lock()
-				for key, data := range c.data {
-					if data.createdAt.Add(interval).Before(time.Now()) {
-						delete(c.data, key)
-					}
-				}
-				c.mutex.Unlock()
-			}
+	for {
+		select {
+		case <-c.done:
+			ticker.Stop()
+			return
+		case <-ticker.C:
+			c.reap(interval)
 		}
-	}()
+	}
+}
+
+func (c *Cache) reap(interval time.Duration) {
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
+	for key, data := range c.data {
+		if data.createdAt.Add(interval).Before(time.Now()) {
+			delete(c.data, key)
+		}
+	}
+
 }
 
 func (c *Cache) Stop() {
