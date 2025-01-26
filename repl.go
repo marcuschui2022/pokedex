@@ -139,7 +139,7 @@ func commandMapBack(cfg *config) error {
 		curURL = *cfg.Previous
 	} else {
 
-		return fmt.Errorf("no previous page.")
+		return fmt.Errorf("no previous page")
 	}
 
 	res, err := http.Get(curURL)
