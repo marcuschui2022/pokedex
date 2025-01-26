@@ -21,9 +21,12 @@ func startRepl() {
 
 		commandName := words[0]
 
-		if cmd, cmdExists := commands[commandName]; cmdExists {
-			if err := cmd.callback(); err != nil {
-				fmt.Printf("Error executing command: %s\n", err)
+		if cmd, cmdExists := getCommands()[commandName]; cmdExists {
+			if cmdExists {
+				err := cmd.callback()
+				if err != nil {
+					fmt.Printf("Error executing command: %s\n", err)
+				}
 			}
 		} else {
 			fmt.Printf("Unknown command: %s\n", commandName)
@@ -39,23 +42,6 @@ func cleanInput(text string) []string {
 	return words
 }
 
-// commandHelp displays a help message with descriptions of available commands and their usage.
-func commandHelp() error {
-	fmt.Println("Welcome to the Pokedex!")
-	fmt.Println("Usage:")
-	fmt.Println()
-	fmt.Println("help: Displays a help message")
-	fmt.Println("exit: Exit the Pokedex")
-	return nil
-}
-
-// commandExit terminates the program with a successful exit status and returns nil error.
-func commandExit() error {
-	fmt.Println("Closing the Pokedex... Goodbye!")
-	os.Exit(0)
-	return nil
-}
-
 // cliCommand represents a single CLI command with its name, description, and a callback function to execute it.
 type cliCommand struct {
 	name        string
@@ -63,16 +49,18 @@ type cliCommand struct {
 	callback    func() error
 }
 
-// commands is a map of supported CLI commands, mapping command names to their corresponding cliCommand struct.
-var commands = map[string]cliCommand{
-	"exit": {
-		name:        "exit",
-		description: "Exit the Pokedex",
-		callback:    commandExit,
-	},
-	"help": {
-		name:        "help",
-		description: "Displays a help message",
-		callback:    commandHelp,
-	},
+// getCommands returns a map of available CLI commands, each with its name, description, and associated callback function.
+func getCommands() map[string]cliCommand {
+	return map[string]cliCommand{
+		"exit": {
+			name:        "exit",
+			description: "Exit the Pokedex",
+			callback:    commandExit,
+		},
+		"help": {
+			name:        "help",
+			description: "Displays a help message",
+			callback:    commandHelp,
+		},
+	}
 }
