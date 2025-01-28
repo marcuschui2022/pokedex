@@ -7,7 +7,7 @@ import (
 	"net/http"
 )
 
-type Pokemon struct {
+type PokemonList struct {
 	EncounterMethodRates []struct {
 		EncounterMethod struct {
 			Name string `json:"name"`
@@ -39,7 +39,7 @@ type Pokemon struct {
 		Pokemon struct {
 			Name string `json:"name"`
 			URL  string `json:"url"`
-		} `json:"Pokemon"`
+		} `json:"PokemonList"`
 		VersionDetails []struct {
 			EncounterDetails []struct {
 				Chance          int           `json:"chance"`
@@ -60,27 +60,27 @@ type Pokemon struct {
 	} `json:"pokemon_encounters"`
 }
 
-func (c *Client) ListLocationPokemon(locationName string) (Pokemon, error) {
+func (c *Client) ListLocationPokemon(locationName string) (PokemonList, error) {
 	url := baseURL + "/location-area/" + locationName
 
 	if val, ok := c.cache.Get(url); ok {
-		resp := Pokemon{}
+		resp := PokemonList{}
 
 		err := json.Unmarshal(val, &resp)
 		if err != nil {
-			return Pokemon{}, err
+			return PokemonList{}, err
 		}
 		return resp, nil
 	}
 
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
-		return Pokemon{}, err
+		return PokemonList{}, err
 	}
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return Pokemon{}, err
+		return PokemonList{}, err
 	}
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
@@ -91,13 +91,13 @@ func (c *Client) ListLocationPokemon(locationName string) (Pokemon, error) {
 
 	data, err := io.ReadAll(resp.Body)
 	if err != nil {
-		return Pokemon{}, err
+		return PokemonList{}, err
 	}
 
-	var locationPokemonResp Pokemon
+	var locationPokemonResp PokemonList
 	err = json.Unmarshal(data, &locationPokemonResp)
 	if err != nil {
-		return Pokemon{}, err
+		return PokemonList{}, err
 	}
 
 	c.cache.Add(url, data)
