@@ -13,6 +13,7 @@ type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
 	cache            *pokecache.Cache
+	exploreArea      *string
 }
 
 func startRepl() {
@@ -37,6 +38,10 @@ func startRepl() {
 
 		if cmd, cmdExists := getCommands()[commandName]; cmdExists {
 			if cmdExists {
+				if commandName == "explore" {
+					cfg.exploreArea = &words[1]
+				}
+
 				err := cmd.callback(cfg)
 				if err != nil {
 					fmt.Printf("Error executing command: %s\n", err)
@@ -85,6 +90,11 @@ func getCommands() map[string]cliCommand {
 			name:        "mapb",
 			description: "Displays the previous page of the Pokedex map",
 			callback:    commandMapBack,
+		},
+		"explore": {
+			name:        "explore",
+			description: "Explore the area of the list of all the Pokemon locations",
+			callback:    commandExplore,
 		},
 	}
 }

@@ -20,7 +20,7 @@ type location struct {
 func httpGET(url string, cfg *config) (location, error) {
 	// check cache
 	if cachedData, found := cfg.cache.Get(url); found {
-		fmt.Println("Cache hit!")
+		//fmt.Println("Cache hit!")
 		var locations location
 		err := json.Unmarshal(cachedData, &locations)
 		if err != nil {
@@ -29,7 +29,7 @@ func httpGET(url string, cfg *config) (location, error) {
 		return locations, nil
 	}
 
-	fmt.Println("Cache miss! Fetching from API")
+	//fmt.Println("Cache miss! Fetching from API")
 	res, err := http.Get(url)
 	if err != nil {
 		return location{}, fmt.Errorf("failed to perform HTTP GET request to %s: %w", url, err)
@@ -50,7 +50,7 @@ func httpGET(url string, cfg *config) (location, error) {
 		return location{}, fmt.Errorf("failed to read response body: %w", err)
 	}
 
-	fmt.Println("Cache add!")
+	//fmt.Println("Cache add!")
 	cfg.cache.Add(url, body)
 
 	var locations location
