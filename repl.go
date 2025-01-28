@@ -3,26 +3,18 @@ package main
 import (
 	"bufio"
 	"fmt"
-	"github.com/marcuschui2022/pokedex/internal/pokecache"
+	"github.com/marcuschui2022/pokedex/internal/api"
 	"os"
 	"strings"
-	"time"
 )
 
 type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
-	cache            *pokecache.Cache
-	exploreArea      *string
+	apiClient        api.Client
 }
 
-func startRepl() {
-	const cacheInterval = 5 * time.Second
-	cache := pokecache.NewCache(cacheInterval)
-	cfg := &config{
-		cache: cache,
-	}
-
+func startRepl(cfg *config) {
 	reader := bufio.NewScanner(os.Stdin)
 
 	for {
@@ -35,14 +27,14 @@ func startRepl() {
 		}
 
 		commandName := words[0]
+		args := []string{}
+		if len(words) > 1 {
+			args = words[1:]
+		}
 
 		if cmd, cmdExists := getCommands()[commandName]; cmdExists {
 			if cmdExists {
-				if commandName == "explore" {
-					cfg.exploreArea = &words[1]
-				}
-
-				err := cmd.callback(cfg)
+				err := cmd.callback(cfg, args...)
 				if err != nil {
 					fmt.Printf("Error executing command: %s\n", err)
 				}
@@ -65,7 +57,7 @@ func cleanInput(text string) []string {
 type cliCommand struct {
 	name        string
 	description string
-	callback    func(cfg *config) error
+	callback    func(*config, ...string) error
 }
 
 // getCommands returns a map of available CLI commands, each with its name, description, and associated callback function.
@@ -92,7 +84,7 @@ func getCommands() map[string]cliCommand {
 			callback:    commandMapBack,
 		},
 		"explore": {
-			name:        "explore",
+			name:        "explore <location_name>",
 			description: "Explore the area of the list of all the Pokemon locations",
 			callback:    commandExplore,
 		},

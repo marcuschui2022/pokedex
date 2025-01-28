@@ -6,9 +6,8 @@ import (
 )
 
 // commandExit terminates the program with a successful exit status and returns nil error.
-func commandExit(cfg *config) error {
+func commandExit(cfg *config, args ...string) error {
 	fmt.Println("Closing the Pokedex... Goodbye!")
-	cfg.cache.Stop()
 	os.Exit(0)
 	return nil
 }
