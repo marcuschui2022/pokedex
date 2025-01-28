@@ -27,7 +27,7 @@ func startRepl(cfg *config) {
 		}
 
 		commandName := words[0]
-		args := []string{}
+		var args []string
 		if len(words) > 1 {
 			args = words[1:]
 		}
