@@ -12,7 +12,7 @@ type config struct {
 	nextLocationsURL *string
 	prevLocationsURL *string
 	apiClient        api.Client
-	pokemonCatch     map[string]api.Pokemon
+	caughtPokemon    map[string]api.Pokemon
 }
 
 func startRepl(cfg *config) {
