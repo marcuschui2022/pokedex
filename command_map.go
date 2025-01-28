@@ -6,6 +6,7 @@ import (
 )
 
 func commandMapForward(cfg *config, args ...string) error {
+	_ = args
 	locationResp, err := cfg.apiClient.ListLocation(cfg.nextLocationsURL)
 	if err != nil {
 		return err
@@ -22,6 +23,7 @@ func commandMapForward(cfg *config, args ...string) error {
 }
 
 func commandMapBack(cfg *config, args ...string) error {
+	_ = args
 	if cfg.prevLocationsURL == nil {
 		return errors.New("you're on the first page")
 	}
